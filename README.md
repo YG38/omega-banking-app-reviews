@@ -1,5 +1,257 @@
 # Ethiopian Banking App Reviews Analysis
 
+A comprehensive pipeline for scraping, analyzing, and visualizing user reviews of Ethiopian banking applications from the Google Play Store.
+
+## Table of Contents
+
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+  - [Scraping Reviews](#scraping-reviews)
+  - [Preprocessing](#preprocessing)
+  - [Analysis](#analysis)
+  - [Visualization](#visualization)
+  - [Database Operations](#database-operations)
+  - [Running the Full Pipeline](#running-the-full-pipeline)
+- [Project Structure](#project-structure)
+- [Database Schema](#database-schema)
+- [Troubleshooting](#troubleshooting)
+- [License](#license)
+
+## Features
+
+- **Scraping**: Automated collection of app reviews from Google Play Store
+- **Preprocessing**: Advanced NLP-based text cleaning and feature extraction
+- **Sentiment Analysis**: Multi-level sentiment classification (positive/negative/neutral)
+- **Thematic Analysis**: Topic modeling and keyword extraction
+- **Visualization**: Interactive dashboards and static visualizations
+- **Database Integration**: Store and query results in Oracle or PostgreSQL
+- **Modular Design**: Easy to extend and customize
+
+## Prerequisites
+
+- Python 3.8+
+- pip (Python package manager)
+- Oracle Database 19c+ or PostgreSQL 13+ (optional, for database storage)
+- Git (for version control)
+
+## Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/yourusername/omega-banking-app-reviews.git
+   cd omega-banking-app-reviews
+   ```
+
+2. **Create and activate a virtual environment**:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+
+3. **Install the required packages**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Set up environment variables**:
+   Create a `.env` file in the project root with your database credentials:
+   ```
+   DB_HOST=localhost
+   DB_PORT=5432
+   DB_NAME=bank_reviews
+   DB_USER=your_username
+   DB_PASSWORD=your_password
+   DB_TYPE=postgresql  # or 'oracle'
+   DB_SERVICE=XE  # For Oracle only
+   ```
+
+## Configuration
+
+### Database Setup
+
+1. **PostgreSQL**:
+   ```bash
+   createdb bank_reviews
+   psql -U your_username -d bank_reviews -f src/db/schema/postgres_schema.sql
+   ```
+
+2. **Oracle**:
+   ```bash
+   sqlplus sys/your_password@//localhost:1521/XE as sysdba
+   CREATE USER bank_reviews IDENTIFIED BY your_password;
+   GRANTE CONNECT, RESOURCE, CREATE VIEW TO bank_reviews;
+   ```
+   Then run the Oracle schema script:
+   ```bash
+   sqlplus bank_reviews/your_password@//localhost:1521/XE @src/db/schema/oracle_schema.sql
+   ```
+
+## Usage
+
+The pipeline can be run as a whole or step by step using the command-line interface.
+
+### Scraping Reviews
+
+Scrape reviews from Google Play Store:
+
+```bash
+python main.py scrape --count 500 --output-dir data/raw
+```
+
+### Preprocessing
+
+Clean and preprocess the scraped reviews:
+
+```bash
+python main.py preprocess --input-dir data/raw --output-dir data/processed
+```
+
+### Analysis
+
+Perform sentiment and thematic analysis:
+
+```bash
+python main.py analyze --input-file data/processed/processed_reviews.csv --output-dir data/analysis
+```
+
+### Visualization
+
+Generate visualizations from analysis results:
+
+```bash
+python main.py visualize --input-dir data/analysis --output-dir reports/figures
+```
+
+### Database Operations
+
+#### Initialize Database
+
+```bash
+python main.py db init --drop-tables
+```
+
+#### Load Data into Database
+
+```bash
+python main.py db load --input-dir data/processed --batch-size 100
+```
+
+#### Execute SQL Query
+
+```bash
+python main.py db query --sql "SELECT * FROM reviews LIMIT 10"
+```
+
+### Running the Full Pipeline
+
+Run the entire pipeline (scrape → preprocess → analyze → visualize → load to DB):
+
+```bash
+python main.py all --count 500
+```
+
+## Project Structure
+
+```
+omega-banking-app-reviews/
+├── data/                    # Data storage
+│   ├── raw/                 # Raw scraped data
+│   ├── processed/           # Processed and cleaned data
+│   └── analysis_results/    # Analysis outputs
+├── reports/                 # Generated reports and visualizations
+│   └── figures/            # Saved visualizations
+├── src/
+│   ├── db/                 # Database module
+│   │   ├── __init__.py
+│   │   ├── database.py     # Database connection and operations
+│   │   ├── init_db.py      # Database initialization
+│   │   └── load_data.py    # Data loading utilities
+│   │
+│   ├── nlp/               # NLP analysis
+│   │   ├── __init__.py
+│   │   ├── sentiment_analysis.py
+│   │   └── advanced_analysis.py
+│   │
+│   ├── preprocessing/     # Data cleaning and preparation
+│   │   ├── __init__.py
+│   │   └── clean_reviews.py
+│   │
+│   ├── scraping/          # Web scraping utilities
+│   │   ├── __init__.py
+│   │   └── scrape_reviews.py
+│   │
+│   └── visualization/     # Data visualization
+│       ├── __init__.py
+│       └── visualize_results.py
+│
+├── tests/                 # Unit and integration tests
+├── .env.example           # Example environment variables
+├── .gitignore
+├── main.py                # Command-line interface
+├── README.md
+└── requirements.txt       # Project dependencies
+```
+
+## Database Schema
+
+### Reviews Table
+- `review_id`: Primary key
+- `app_id`: App identifier
+- `app_name`: Name of the banking app
+- `reviewer_name`: Name of the reviewer
+- `review_text`: Full text of the review
+- `rating`: Star rating (1-5)
+- `thumbs_up_count`: Number of helpful votes
+- `review_date`: Date of the review
+- `sentiment`: Sentiment classification (positive/negative/neutral)
+- `sentiment_score`: Numeric sentiment score (-1 to 1)
+- `keywords`: Extracted keywords (JSON array)
+- `themes`: Identified themes (JSON array)
+- `created_at`: Timestamp of when the record was created
+- `updated_at`: Timestamp of when the record was last updated
+
+### Apps Table
+- `app_id`: Primary key
+- `app_name`: Name of the app
+- `package_name`: Package identifier
+- `description`: App description
+- `category`: App category
+- `installs`: Number of installs
+- `score`: Average rating
+- `reviews_count`: Total number of reviews
+- `last_updated`: When the app was last updated
+- `version`: Current version
+- `developer`: Developer name
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Database Connection Errors**:
+   - Verify database is running
+   - Check credentials in `.env` file
+   - Ensure the database user has correct permissions
+
+2. **Missing Dependencies**:
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Rate Limiting**:
+   - If scraping fails, wait and try again later
+   - Use proxies if needed
+
+4. **Memory Issues**:
+   - Process data in smaller batches
+   - Increase system swap space if needed
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
 ## Project Overview
 This project analyzes user reviews from mobile banking apps of three major Ethiopian banks to gain insights into customer satisfaction, identify pain points, and provide data-driven recommendations for improvement. The analysis includes sentiment analysis using DistilBERT and thematic analysis using TF-IDF and clustering techniques.
 
